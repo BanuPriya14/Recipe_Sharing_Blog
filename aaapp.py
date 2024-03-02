@@ -1,14 +1,16 @@
+# app.py
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
-from secret_key import secret_key_value
+from werkzeug.security import check_password_hash
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secret_key_value  # Change this to a random secret key
+app.config['SECRET_KEY'] = 'your_secret_key_here'  # Change this to a random secret key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///recipes.db'  # Database file will be created in the project folder
 db = SQLAlchemy(app)
 
-# Define models
+
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -24,27 +26,37 @@ class Comment(db.Model):
     content = db.Column(db.Text, nullable=False)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(100), nullable=False)
 
-# Configure Flask-Login
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-# Routes
 @app.route('/')
 def index():
     recipes = Recipe.query.all()
     return render_template('index.html', recipes=recipes)
+'''
+@app.route('/submit_recipe', methods=['GET', 'POST'])
+def submit_recipe():
+    if request.method == 'POST':
+        # Implement recipe submission logic here
+        pass
+    return render_template('submit_recipe.html')
+
+@app.route('/recipe/<int:recipe_id>', methods=['GET', 'POST'])
+def view_recipe(recipe_id):
+    # Implement viewing a single recipe logic here
+    pass
+
+@app.route('/rate_recipe/<int:recipe_id>', methods=['POST'])
+def rate_recipe(recipe_id):
+    # Implement rating a recipe logic here
+    pass
+
+@app.route('/comment/<int:recipe_id>', methods=['POST'])
+def comment(recipe_id):
+    # Implement leaving a comment logic here
+    pass
+'''
+# Step 6: Implement the Logic
 
 @app.route('/submit_recipe', methods=['GET', 'POST'])
-@login_required
 def submit_recipe():
     if request.method == 'POST':
         title = request.form['title']
@@ -61,6 +73,7 @@ def submit_recipe():
 
     return render_template('submit_recipe.html')
 
+
 @app.route('/recipe/<int:recipe_id>', methods=['GET', 'POST'])
 def view_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
@@ -76,13 +89,13 @@ def view_recipe(recipe_id):
 
     return render_template('view_recipe.html', recipe=recipe)
 
+
 @app.route('/rate_recipe/<int:recipe_id>', methods=['POST'])
-@login_required
 def rate_recipe(recipe_id):
-    pass  # Rating logic can be implemented here if needed
+    pass  # The rating logic is already implemented in the view_recipe route
+
 
 @app.route('/comment/<int:recipe_id>', methods=['POST'])
-@login_required
 def comment(recipe_id):
     if request.method == 'POST':
         content = request.form['content']
@@ -95,6 +108,21 @@ def comment(recipe_id):
 
     return redirect(url_for('view_recipe', recipe_id=recipe_id))
 
+
+# Step 7: Add User Authentication (Optional)
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -103,7 +131,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-        if user and check_password_hash(user.password_hash, password):
+        if user and check_password_hash(user.password, password):
             login_user(user)
             flash('Logged in successfully!', 'success')
             return redirect(url_for('index'))
@@ -112,13 +140,13 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('index'))
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

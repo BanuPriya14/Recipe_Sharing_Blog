@@ -1,0 +1,23 @@
+/* Static CSS for index.html */
+
+/* Style for the header */
+h1 {
+    color: #333;
+}
+
+/* Style for the recipe list */
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+/* Style for recipe links */
+li a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+/* Hover effect for recipe links */
+li a:hover {
+    text-decoration: underline;
+}
